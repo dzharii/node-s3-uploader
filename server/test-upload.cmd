@@ -1,0 +1,1 @@
+curl --header "Content-Type:application/octet-stream" --trace-ascii debugdump.txt --data-binary @../../PUBG.tar http://localhost:3000/
