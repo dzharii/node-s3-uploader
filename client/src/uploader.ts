@@ -14,8 +14,9 @@ import {printError} from '../../shared/log';
 const conf = {
     port: 3000,
     host: '127.0.0.1',
+    //host: '192.168.1.121',
     file: path.resolve(__dirname, '../../../PUBG.tar'),
-    readBlockSize: 100 * 1024 * 1024
+    readBlockSize: 15 * 1024 * 1024
 };
 
 
@@ -24,16 +25,16 @@ const conf = {
     try {
         const client = await connectAsync(conf.port, conf.host);
         const stream = fs.createReadStream(conf.file);
+        let counter = 0;
 
 
         console.log('connected!')
         client.on('data', data => {
-            console.log('Received ' + data);
-        });
-
+            console.log('Response');
+            console.log(data.toString());
+        })
         client.on('drain', () => {
-            console.log('drained');
-            if (stream.isPaused) {
+            if (stream.isPaused()) {
                 stream.resume();
             }
         });
@@ -41,8 +42,14 @@ const conf = {
         const { host, port, file } = conf;
         const requestHeader = await makePostHeaderForFile(file, host, port);
         client.write(requestHeader);
-        stream.on('data', data => {
+        stream.on('data', (data: Buffer) => {
             client.write(data);
+            counter += data.length;
+            const counterMb = counter / (1024 * 1024 ) | 0;
+            if (counterMb % 10 === 0) {
+                console.log(`Wrote ${counterMb} Mb`);
+            }
+
             stream.pause();
         });
         stream.once('end', data => {

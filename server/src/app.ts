@@ -23,24 +23,29 @@ const app = express();
 app.post('/', async (req, res) => {
     let counter = 0;
     let firstWrite = true;
+    const ws = fs.createWriteStream(conf.uploadFile);
     console.log('Started /');
-    req.on('data', async (data: Buffer) => {
-        req.pause();
-        if (firstWrite) {
-            await writeFileAsync(conf.uploadFile, "");
-            firstWrite = false;
-            console.log('Created new file');
+
+    ws.on('drain', () => {
+        console.log('drain');
+        if (req.isPaused()) {
+            req.resume();
         }
-        await appendFileAsync(conf.uploadFile, data);
+    });
+    req.on('data', async (data: Buffer) => {
+        if (!ws.write(data)) {
+            console.log('Wait for drain');
+            req.pause();
+        }
         counter += data.length;
         const counterMb = (counter / 1024 / 1024) | 0;
         if (counter % 10 === 0) {
             console.log('Wrote ' + counterMb + 'Mb');
         }
-        req.resume();
     });
 
     req.once('end', () => {
+        ws.end();
         res.sendStatus(201);
     });
 
