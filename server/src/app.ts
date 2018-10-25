@@ -27,14 +27,12 @@ app.post('/', async (req, res) => {
     console.log('Started /');
 
     ws.on('drain', () => {
-        console.log('drain');
         if (req.isPaused()) {
             req.resume();
         }
     });
     req.on('data', async (data: Buffer) => {
         if (!ws.write(data)) {
-            console.log('Wait for drain');
             req.pause();
         }
         counter += data.length;

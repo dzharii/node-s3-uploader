@@ -13,8 +13,8 @@ import {printError} from '../../shared/log';
 
 const conf = {
     port: 3000,
-    host: '127.0.0.1',
-    //host: '192.168.1.121',
+    //host: '127.0.0.1',
+    host: '192.168.1.121',
     file: path.resolve(__dirname, '../../../PUBG.tar'),
     readBlockSize: 15 * 1024 * 1024
 };
@@ -43,14 +43,14 @@ const conf = {
         const requestHeader = await makePostHeaderForFile(file, host, port);
         client.write(requestHeader);
         stream.on('data', (data: Buffer) => {
-            client.write(data);
+            if (!client.write(data)) {
+                stream.pause();
+            }
             counter += data.length;
             const counterMb = counter / (1024 * 1024 ) | 0;
             if (counterMb % 10 === 0) {
                 console.log(`Wrote ${counterMb} Mb`);
             }
-
-            stream.pause();
         });
         stream.once('end', data => {
             console.log('End of stream');
