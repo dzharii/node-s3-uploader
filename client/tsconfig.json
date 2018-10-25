@@ -1,5 +1,4 @@
 {
-    "baseUrl": ".",
     "compilerOptions": {
         "module": "commonjs",
         "esModuleInterop": true,

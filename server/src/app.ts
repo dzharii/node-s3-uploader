@@ -1,19 +1,17 @@
 import express from 'express';
 import * as fs from 'fs';
+import * as util from 'util';
+import {
+    numberOrDie,
+    stringOrDie
+} from '../../shared/do-or-die';
 
-function numberOrDie(key: string): number {
-    if (typeof process.env[key] === 'undefined') {
-        throw new Error(`process.env.${key} (number) is undefined.`);
-    }
-    return +(process.env[key]);
-}
+import {
+    writeFileAsync,
+    appendFileAsync
+} from '../../shared/async-fs';
 
-function stringOrDie(key: string): string {
-    if (typeof process.env[key] === 'undefined') {
-        throw new Error(`process.env.${key} (string) is undefined.`);
-    }
-    return process.env[key];
-}
+
 
 const conf = {
     port: numberOrDie('PORT'),
@@ -23,19 +21,32 @@ const conf = {
 const app = express();
 
 app.post('/', async (req, res) => {
-    try {
-        req.pipe(fs.createWriteStream(conf.uploadFile));
-        const waitNext = new Promise((resolve, reject) => {
-            req.on('end', resolve);
-            req.on('error', reject);
-        });
-        await waitNext;
-        res.sendStatus(201);
+    let counter = 0;
+    let firstWrite = true;
+    req.on('data', async (data: Buffer) => {
+        req.pause();
+        if (firstWrite) {
+            await writeFileAsync(conf.uploadFile, "");
+            firstWrite = false;
+            console.log('Created new file');
+        }
+        await appendFileAsync(conf.uploadFile, data);
+        counter += data.length;
+        const counterMb = (counter / 1024 / 1024) | 0;
+        if (counter % 10 === 0) {
+            console.log('Wrote ' + counterMb + 'Mb');
+        }
+        req.resume();
+    });
 
-    } catch (err) {
+    req.once('end', () => {
+        res.sendStatus(201);
+    });
+
+    req.on('error', (err) => {
         res.status(500);
         res.send(err.toString());
-    }
+    });
 });
 
 console.log('I am glad to serve you on port :' + conf.port);
