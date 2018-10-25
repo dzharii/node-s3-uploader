@@ -23,6 +23,7 @@ const app = express();
 app.post('/', async (req, res) => {
     let counter = 0;
     let firstWrite = true;
+    console.log('Started /');
     req.on('data', async (data: Buffer) => {
         req.pause();
         if (firstWrite) {
