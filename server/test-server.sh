@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-PORT=3000
-UPLOADFILE=./upload.tar
+export PORT=3000
+export UPLOADFILE=./upload.tar
 ts-node ./src/app.ts
